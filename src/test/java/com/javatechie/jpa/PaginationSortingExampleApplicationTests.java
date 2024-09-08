@@ -7,6 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.List;
 import java.util.Random;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,9 +54,19 @@ class PaginationSortingExampleApplicationTests {
 		List<Product> sortedProducts = productService.findProductsWithSorting("name");
 		assertNotNull(sortedProducts);
 		assertTrue(sortedProducts.size() > 0);
-		for (int i = 0; i < sortedProducts.size() - 1; i++) {
-			assertTrue(sortedProducts.get(i).getName().compareTo(sortedProducts.get(i + 1).getName()) <= 0);
-		}
+		
+		// Create a Collator that mimics MySQL's default sorting
+		Collator collator = Collator.getInstance(Locale.ENGLISH);
+		collator.setStrength(Collator.SECONDARY); // Case-insensitive, but considers accents
+		
+		// Extract names and create a sorted copy using the collator
+		List<String> names = sortedProducts.stream()
+			.map(Product::getName)
+			.collect(Collectors.toList());
+		List<String> sortedNames = new ArrayList<>(names);
+		sortedNames.sort(collator);
+		
+		assertEquals(sortedNames, names, "Products should be sorted by name in MySQL-like order");
 	}
 
 	@Test
